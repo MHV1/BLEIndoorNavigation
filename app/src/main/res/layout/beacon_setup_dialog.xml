@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Beacon: FC:3C:E7:4D:25:EC"
+        android:textSize="24sp"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Select Beacon"
+        android:id="@+id/button_beacon_select"
+        />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Description: "
+        android:textSize="24sp"
+        android:layout_marginTop="10dp"/>
+
+    <EditText
+        android:id="@+id/description_field"
+        android:layout_width="match_parent"
+        android:inputType="text"
+        android:layout_height="wrap_content" >
+    </EditText>
+
+</LinearLayout>

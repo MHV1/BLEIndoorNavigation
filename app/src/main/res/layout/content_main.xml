@@ -1,0 +1,178 @@
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context="com.mhv.bleindoornavigation.MainActivity"
+    tools:showIn="@layout/activity_main"
+    android:background="@drawable/flat_map_no_color"
+    android:id="@+id/main_container">
+
+    <!--<TextView
+        android:id="@+id/deviceAddress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginLeft="15dp"
+        android:layout_marginTop="20dp"
+        android:text="Device Address:" />
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/deviceAddress"
+        android:layout_marginTop="18dp"
+        android:layout_marginLeft="15dp"
+        android:text="RSSI" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/textView1"
+        android:layout_alignBottom="@+id/textView1"
+        android:layout_marginLeft="150dp"
+        android:text="Distances" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textView1"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp"
+        android:text="AVG Distance" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/textView3"
+        android:layout_alignLeft="@+id/textView3"
+        android:layout_marginBottom="20dp"
+        android:text="AVG RSSI" />
+
+    <TextView
+        android:id="@+id/resultsDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@+id/textView1"
+        android:layout_below="@+id/textView1"
+        android:layout_marginTop="15dp"
+        android:text="0" />
+
+    <TextView
+        android:id="@+id/distancesDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/resultsDisplay"
+        android:layout_alignLeft="@+id/textView2"
+        android:text="0" />
+
+    <TextView
+        android:id="@+id/avgRSSIDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/textView4"
+        android:layout_marginLeft="150dp"
+        android:text="0" />
+
+    <TextView
+        android:id="@+id/avgDistanceDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/textView3"
+        android:layout_marginLeft="150dp"
+        android:text="0" />-->
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/orientationDisplay"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentStart="true"
+        android:text="Orientation:"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Done"
+        android:id="@+id/button_done"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="48dp"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Cancel"
+        android:id="@+id/button_cancel"
+        android:layout_alignBottom="@+id/button_done"
+        android:layout_alignParentEnd="true"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Description: Room 1 \nDistance: 3m"
+        android:id="@+id/textView"
+        android:layout_marginBottom="47dp"
+        android:background="@android:color/darker_gray"
+        android:layout_alignBottom="@+id/imageView2"
+        android:layout_alignStart="@+id/imageView2"/>
+
+    <ImageView
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:id="@+id/imageView2"
+        android:src="@drawable/triangle"
+        android:background="#44939c"
+        android:layout_alignParentEnd="true"
+        android:layout_marginEnd="95dp"
+        android:layout_marginTop="160dp"/>
+
+
+    <ImageView
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:id="@+id/imageView"
+        android:src="@drawable/triangle"
+        android:background="#686464"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentStart="true"
+        android:layout_marginBottom="220dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Description: Room 2 \nDistance: 5m"
+        android:id="@+id/textView2"
+        android:background="@android:color/darker_gray"
+        android:layout_above="@+id/imageView"
+        android:layout_alignParentStart="true"/>
+
+    <!--<TextView
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:text="AVG RSSI:"
+         android:id="@+id/avgRSSIDisplay"
+         android:layout_alignParentTop="true"
+         android:layout_alignParentEnd="true"/>
+
+     <TextView
+         android:layout_width="wrap_content"
+         android:layout_height="wrap_content"
+         android:text="AVG Distance:"
+         android:id="@+id/avgDistanceDisplay"
+         android:layout_below="@+id/avgRSSIDisplay"
+         android:layout_alignEnd="@+id/avgRSSIDisplay"
+         android:layout_marginTop="10dp"/>-->
+
+</RelativeLayout>

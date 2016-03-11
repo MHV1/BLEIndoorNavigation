@@ -1,0 +1,28 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="com.mhv.bleindoornavigation.MainActivity">
+    <item
+        android:id="@+id/action_beacon_scanner"
+        android:orderInCategory="100"
+        android:title="Beacon Scanner"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_beacon_setup"
+        android:orderInCategory="100"
+        android:title="Beacon Setup"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action"
+        android:orderInCategory="100"
+        android:title="Action"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/attachment"
+        android:orderInCategory="100"
+        android:title="Attachment"
+        app:showAsAction="never"/>
+</menu>
