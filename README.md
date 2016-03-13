@@ -1,5 +1,9 @@
 # BLEIndoorNavigation
 
+Copyright 2016 Milan Herrera <mherrv1@gmail.com>
+Licensed under the Apache License, Version 2.0
+
+
 Thesis project @ Turun Ammattikorkeakoulu.
 
 This application is part of my bachelor’s thesis for the degree of IT engineering at Turun Ammattikorkeakoulu. Thesis document available at: http://theseus.fi/bitstream/handle/10024/105619/Herrera%20Vargas_Milan.pdf?sequence=1
