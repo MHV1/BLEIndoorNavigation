@@ -9,8 +9,8 @@
         android:id="@+id/textView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Beacon: FC:3C:E7:4D:25:EC"
-        android:textSize="24sp"/>
+        android:text="Beacon: Select beacon"
+        android:textSize="20sp"/>
 
     <Button
         android:layout_width="wrap_content"

@@ -36,6 +36,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -57,7 +58,7 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
-	//Map pointer variables
+    private RelativeLayout mainContainer;
 	private PointF location;
 	private MapPointer mapPointer;
 
@@ -101,6 +102,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 	private Button done;
 	private Button cancel;
+	private boolean setup = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -126,7 +128,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 		orientationDisplay = (TextView) findViewById(R.id.orientationDisplay);
 
-		final RelativeLayout mainContainer = (RelativeLayout) findViewById(R.id.main_container);
+		mainContainer = (RelativeLayout) findViewById(R.id.main_container);
 		mapPointer = new MapPointer(getApplicationContext());
 		mainContainer.addView(mapPointer);
 
@@ -148,20 +150,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		}).start();
 
 		mainContainer.setOnTouchListener(new View.OnTouchListener() {
-
 			@Override
 			public boolean onTouch(View v, MotionEvent event) {
 				switch (event.getAction() & MotionEvent.ACTION_MASK) {
 					case MotionEvent.ACTION_DOWN:
-						PointF tap = new PointF(event.getX(), event.getY());
-						Coordinates position = new Coordinates(tap.x, tap.y);
-						mapPointer.setPointerPosition(position);
-						mapPointer.postInvalidate();
+						if (!setup) {
+							PointF tap = new PointF(event.getX(), event.getY());
+							Coordinates position = new Coordinates(tap.x, tap.y);
+							mapPointer.setPointerPosition(position);
+							mapPointer.postInvalidate();
+
+						} else {
+							PointF tap = new PointF(event.getX(), event.getY());
+                            beaconSetup(tap);
+						}
+
 						break;
 					case MotionEvent.ACTION_UP:
 						break;
 				}
 				return true;
+			}
+		});
+
+		cancel.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				final String appName = getApplicationContext().getString(R.string.app_name);
+				setTitle(appName);
+				done.setVisibility(View.INVISIBLE);
+				cancel.setVisibility(View.INVISIBLE);
+				done.setEnabled(false);
+				cancel.setEnabled(false);
+				setup = false;
 			}
 		});
 
@@ -269,7 +290,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	}
 
 	public void runScan() {
-
 		if (scanner != null) {
 			rssiScanResults.clear();
 			distances.clear();
@@ -396,6 +416,69 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		handler.postDelayed(removeLostDevices, onLostTimeoutMillis);
 	}
 
+	public void initSetupMode() {
+		final String appName = getApplicationContext().getString(R.string.app_name);
+		setTitle(appName + " (Setup)");
+		done.setVisibility(View.VISIBLE);
+		cancel.setVisibility(View.VISIBLE);
+		done.setEnabled(true);
+		cancel.setEnabled(true);
+		setup = true;
+	}
+
+	public void beaconSetup(PointF beaconPosition) {
+        final BeaconView beaconView = new BeaconView(getApplicationContext());
+        beaconView.setPosition(beaconPosition);
+        mainContainer.addView(beaconView);
+
+        LayoutInflater layoutInflater = LayoutInflater.from(this);
+        View promptView = layoutInflater.inflate(R.layout.beacon_setup_dialog, null, false);
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setView(promptView);
+
+        final EditText input = (EditText) promptView.findViewById(R.id.description_field);
+
+        Button selectBeacon = (Button) promptView.findViewById(R.id.button_beacon_select);
+        selectBeacon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showBeaconScanner();
+            }
+        });
+
+        alertDialogBuilder
+                .setTitle("New Beacon Setup")
+                .setCancelable(false)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+
+                    }
+                })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                mainContainer.removeView(beaconView);
+                                dialog.cancel();
+                            }
+                        });
+
+        AlertDialog alertD = alertDialogBuilder.create();
+        alertD.show();
+    }
+
+    private void showBeaconScanner() {
+        Dialog dialog = new Dialog(this);
+        dialog.setTitle("Beacon Scanner");
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View v = inflater.inflate(R.layout.beacon_list, null, false);
+        dialog.setContentView(v);
+        dialog.setCancelable(true);
+
+        ListView beaconList = (ListView) dialog.findViewById(R.id.listView);
+        beaconList.setAdapter(arrayAdapter);
+        dialog.show();
+    }
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.menu_main, menu);
@@ -406,59 +489,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
 		if (id == R.id.action_beacon_scanner) {
-			Dialog dialog = new Dialog(this);
-			dialog.setTitle("Beacon Scanner");
-			LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			View v = inflater.inflate(R.layout.beacon_list, null, false);
-			dialog.setContentView(v);
-			dialog.setCancelable(true);
-
-			ListView beaconList = (ListView) dialog.findViewById(R.id.listView);
-			beaconList.setAdapter(arrayAdapter);
-			dialog.show();
+			showBeaconScanner();
 
 		} else if (id == R.id.action_beacon_setup) {
-			mapPointer.setVisibility(View.INVISIBLE);
-			final String appName = getApplicationContext().getString(R.string.app_name);
-			setTitle(appName + " (Setup)");
-			done.setVisibility(View.VISIBLE);
-			cancel.setVisibility(View.VISIBLE);
-			done.setEnabled(true);
-			cancel.setEnabled(true);
-
-		} else if (id == R.id.action) {
-
-			LayoutInflater layoutInflater = LayoutInflater.from(this);
-			View promptView = layoutInflater.inflate(R.layout.beacon_setup_dialog, null, false);
-			AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-			alertDialogBuilder.setView(promptView);
-
-			final EditText input = (EditText) promptView.findViewById(R.id.description_field);
-
-			Button selectBeacon = (Button) promptView.findViewById(R.id.button_beacon_select);
-			selectBeacon.setOnClickListener(new View.OnClickListener() {
-				@Override
-				public void onClick(View v) {
-					Toast.makeText(getApplicationContext(), "Pressed", Toast.LENGTH_SHORT).show();
-				}
-			});
-
-			alertDialogBuilder
-					.setTitle("New Beacon Setup")
-					.setCancelable(false)
-					.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-						public void onClick(DialogInterface dialog, int id) {
-						}
-					})
-					.setNegativeButton("Cancel",
-							new DialogInterface.OnClickListener() {
-								public void onClick(DialogInterface dialog, int id) {
-									dialog.cancel();
-								}
-							});
-
-			AlertDialog alertD = alertDialogBuilder.create();
-			alertD.show();
+			initSetupMode();
 
 		} else if (id == R.id.attachment) {
 			Dialog dialog = new Dialog(this);

@@ -15,12 +15,6 @@
         app:showAsAction="never"/>
 
     <item
-        android:id="@+id/action"
-        android:orderInCategory="100"
-        android:title="Action"
-        app:showAsAction="never"/>
-
-    <item
         android:id="@+id/attachment"
         android:orderInCategory="100"
         android:title="Attachment"
