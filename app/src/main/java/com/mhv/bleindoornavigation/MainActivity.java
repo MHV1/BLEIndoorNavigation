@@ -3,6 +3,7 @@ package com.mhv.bleindoornavigation;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.DialogFragment;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -162,7 +163,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 						} else {
 							PointF tap = new PointF(event.getX(), event.getY());
-                            beaconSetup(tap);
+                            BeaconView beaconView = new BeaconView(getApplicationContext());
+                            beaconView.setPosition(tap);
+                            mainContainer.addView(beaconView);
+                            beaconSetup(beaconView);
 						}
 
 						break;
@@ -271,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 			return;
 		} else {
 			//this.deviceAddress.setText("Device Address: " + beacon.deviceAddress);
-			rssiScanResults.add(beacon.rssi);
+			//rssiScanResults.add(beacon.rssi);
 		}
 		Log.v(TAG, deviceAddress + " " + Utils.toHexString(serviceData));
 		switch (serviceData[0]) {
@@ -302,7 +306,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 					if (rssiScanResults.size() > 0) {
 						for (int i = 0; i < rssiScanResults.size(); i++) {
-							distances.add(distanceClaculation(rssiScanResults.get(i)));
+							distances.add(distanceCalculation(rssiScanResults.get(i)));
 						}
 					}
 
@@ -325,7 +329,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		}
 	}
 
-	private double distanceClaculation(int rssi) {
+	private double distanceCalculation(int rssi) {
 		return Math.pow(10, (-62 - rssi) / 20.00);
 	}
 
@@ -426,32 +430,45 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		setup = true;
 	}
 
-	public void beaconSetup(PointF beaconPosition) {
-        final BeaconView beaconView = new BeaconView(getApplicationContext());
-        beaconView.setPosition(beaconPosition);
-        mainContainer.addView(beaconView);
+	public void beaconSetup(final BeaconView beaconView) {
+        LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = layoutInflater.inflate(R.layout.beacon_setup_dialog, null);
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setView(dialogView);
 
-        LayoutInflater layoutInflater = LayoutInflater.from(this);
-        View promptView = layoutInflater.inflate(R.layout.beacon_setup_dialog, null, false);
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        alertDialogBuilder.setView(promptView);
+        final TextView beaconSelected = (TextView) dialogView.findViewById(R.id.beaconSelected);
+        final EditText input = (EditText) dialogView.findViewById(R.id.description_field);
 
-        final EditText input = (EditText) promptView.findViewById(R.id.description_field);
-
-        Button selectBeacon = (Button) promptView.findViewById(R.id.button_beacon_select);
+        Button selectBeacon = (Button) dialogView.findViewById(R.id.button_beacon_select);
         selectBeacon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                showBeaconScanner();
+                final Dialog dialog = new Dialog(MainActivity.this);
+                dialog.setTitle("Beacon Scanner");
+                ListView beaconList = new ListView(MainActivity.this);
+                beaconList.setAdapter(arrayAdapter);
+                beaconList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        String beaconAddress = arrayAdapter.getItem(position).deviceAddress;
+                        beaconSelected.setText("Beacon: " + beaconAddress);
+                        beaconView.setBeaconAddress(beaconAddress);
+                        dialog.dismiss();
+                    }
+                });
+                dialog.setContentView(beaconList);
+                dialog.setCancelable(true);
+                dialog.show();
             }
         });
 
-        alertDialogBuilder
+        dialogBuilder
                 .setTitle("New Beacon Setup")
-                .setCancelable(false)
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
-
+                        if (input.length() > 0) {
+                            beaconView.setBeaconDescription("Description: " + input.getText().toString());
+                        }
                     }
                 })
                 .setNegativeButton("Cancel",
@@ -462,21 +479,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             }
                         });
 
-        AlertDialog alertD = alertDialogBuilder.create();
-        alertD.show();
-    }
-
-    private void showBeaconScanner() {
-        Dialog dialog = new Dialog(this);
-        dialog.setTitle("Beacon Scanner");
-        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View v = inflater.inflate(R.layout.beacon_list, null, false);
-        dialog.setContentView(v);
-        dialog.setCancelable(true);
-
-        ListView beaconList = (ListView) dialog.findViewById(R.id.listView);
-        beaconList.setAdapter(arrayAdapter);
-        dialog.show();
+        dialogBuilder.create().show();
     }
 
 	@Override
@@ -489,7 +492,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	public boolean onOptionsItemSelected(MenuItem item) {
 		int id = item.getItemId();
 		if (id == R.id.action_beacon_scanner) {
-			showBeaconScanner();
+            final Dialog dialog = new Dialog(this);
+            dialog.setTitle("Beacon Scanner");
+            ListView beaconList = new ListView(this);
+            beaconList.setAdapter(arrayAdapter);
+            dialog.setContentView(beaconList);
+            dialog.setCancelable(true);
+            dialog.show();
 
 		} else if (id == R.id.action_beacon_setup) {
 			initSetupMode();

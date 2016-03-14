@@ -6,7 +6,7 @@
     android:padding="20dp">
 
     <TextView
-        android:id="@+id/textView"
+        android:id="@+id/beaconSelected"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Beacon: Select beacon"
@@ -20,7 +20,7 @@
         />
 
     <TextView
-        android:id="@+id/textView2"
+        android:id="@+id/descriptionLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Description: "
