@@ -3,10 +3,6 @@ package com.mhv.bleindoornavigation;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -18,8 +14,6 @@ import android.bluetooth.le.ScanSettings;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.PointF;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -65,6 +59,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 	//Sensor variables
 	private SensorManager sensorManager;
+	private Sensor accelerometer;
+    private Sensor magnetometer;
+    private float[] accelValues;
+    private float[] magnetValues;
 	private String compassOrientation = "";
 	private TextView orientationDisplay;
 	private TextView distanceDisplay;
@@ -127,6 +125,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 		//Initialize SensorManager
 		sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 		orientationDisplay = (TextView) findViewById(R.id.orientationDisplay);
 
 		mainContainer = (RelativeLayout) findViewById(R.id.main_container);
@@ -384,8 +384,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	@Override
 	public void onResume() {
 		super.onResume();
+        /*Deprecated:
 		sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
-				SensorManager.SENSOR_DELAY_GAME);
+				SensorManager.SENSOR_DELAY_GAME);*/
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
 		handler.removeCallbacksAndMessages(null);
 		setOnLostRunnable();
 		runScan();
@@ -526,18 +529,35 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 	@Override
 	public void onSensorChanged(SensorEvent event) {
-		float degree = Math.round(event.values[0]);
+        /*Deprecated:
+		float degree = Math.round(event.values[0]);*/
+        float rotation[] = new float[9];
+        float orientation[] = new float[3];
+        float orientationDegree = 0f;
 
-		if (degree >= 0 && degree < 90) {
+        if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER)
+            accelValues = event.values;
+        if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD)
+            magnetValues = event.values;
+
+        if (accelValues != null && magnetValues != null) {
+            if (SensorManager.getRotationMatrix(rotation, null, accelValues, magnetValues)) {
+                SensorManager.getOrientation(rotation, orientation);
+                float azimuthDegree = (float) (Math.toDegrees(orientation[0]) + 360) % 360;
+                orientationDegree = Math.round(azimuthDegree);
+            }
+        }
+
+		if (orientationDegree >= 0 && orientationDegree < 90) {
 			compassOrientation = "N";
-		} else if (degree >= 90 && degree < 180) {
+		} else if (orientationDegree >= 90 && orientationDegree < 180) {
 			compassOrientation = "E";
-		} else if (degree >= 180 && degree < 270) {
+		} else if (orientationDegree >= 180 && orientationDegree < 270) {
 			compassOrientation = "S";
 		} else {
 			compassOrientation = "W";
 		}
-		orientationDisplay.setText("Heading: " + Float.toString(degree) + "º" + " " + compassOrientation);
+		orientationDisplay.setText("Heading: " + Float.toString(orientationDegree) + "º" + " " + compassOrientation);
 	}
 
 	@Override
