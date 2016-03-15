@@ -54,10 +54,8 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private RelativeLayout mainContainer;
-	private PointF location;
 	private MapPointer mapPointer;
 
-	//Sensor variables
 	private SensorManager sensorManager;
 	private Sensor accelerometer;
     private Sensor magnetometer;
@@ -74,14 +72,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	private static final String TAG = "BLE_IN";
 	private static final int REQUEST_ENABLE_BLUETOOTH = 1;
 
-	// An aggressive scan for nearby devices that reports immediately.
+	//An aggressive scan for nearby devices that reports immediately.
 	private static final ScanSettings SCAN_SETTINGS =
 			new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0)
 					.build();
 
 	private static final Handler handler = new Handler(Looper.getMainLooper());
 
-	// The Eddystone Service UUID, 0xFEAA.
+	//The Eddystone Service UUID, 0xFEAA.
 	private static final ParcelUuid EDDYSTONE_SERVICE_UUID =
 			ParcelUuid.fromString("0000FEAA-0000-1000-8000-00805F9B34FB");
 
@@ -151,47 +149,51 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		}).start();
 
 		mainContainer.setOnTouchListener(new View.OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				switch (event.getAction() & MotionEvent.ACTION_MASK) {
-					case MotionEvent.ACTION_DOWN:
-						if (!setup) {
-							PointF tap = new PointF(event.getX(), event.getY());
-							Coordinates position = new Coordinates(tap.x, tap.y);
-							mapPointer.setPointerPosition(position);
-							mapPointer.postInvalidate();
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                    case MotionEvent.ACTION_DOWN:
+                        if (!setup) {
+                            PointF tap = new PointF(event.getX(), event.getY());
+                            Coordinates position = new Coordinates(tap.x, tap.y);
+                            mapPointer.setPointerPosition(position);
+                            mapPointer.postInvalidate();
 
-						} else {
-							PointF tap = new PointF(event.getX(), event.getY());
+                        } else {
+                            PointF tap = new PointF(event.getX(), event.getY());
                             BeaconView beaconView = new BeaconView(getApplicationContext());
                             beaconView.setPosition(tap);
                             mainContainer.addView(beaconView);
                             beaconSetup(beaconView);
-						}
+                        }
 
-						break;
-					case MotionEvent.ACTION_UP:
-						break;
-				}
-				return true;
-			}
-		});
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        break;
+                }
+                return true;
+            }
+        });
 
 		cancel.setOnClickListener(new View.OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				final String appName = getApplicationContext().getString(R.string.app_name);
-				setTitle(appName);
-				done.setVisibility(View.INVISIBLE);
-				cancel.setVisibility(View.INVISIBLE);
-				done.setEnabled(false);
-				cancel.setEnabled(false);
-				setup = false;
-			}
-		});
+            @Override
+            public void onClick(View v) {
+                exitSetupMode();
+            }
+        });
+
+        done.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ArrayList<BeaconView> configured = getConfiguredBeacons();
+                /*TODO: Get every beacon in the map to display its own distance.
+                  Right now all distances are being calculated but not shown.*/
+                exitSetupMode();
+                runScan();
+            }
+        });
 
 		scanCallback = new ScanCallback() {
-
 			@Override
 			public void onScanResult(int callbackType, ScanResult result) {
 				ScanRecord scanRecord = result.getScanRecord();
@@ -424,6 +426,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	}
 
 	public void initSetupMode() {
+        if (scanner != null) {
+            scanner.stopScan(scanCallback);
+        }
 		final String appName = getApplicationContext().getString(R.string.app_name);
 		setTitle(appName + " (Setup)");
 		done.setVisibility(View.VISIBLE);
@@ -432,6 +437,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		cancel.setEnabled(true);
 		setup = true;
 	}
+
+    public void exitSetupMode() {
+        final String appName = getApplicationContext().getString(R.string.app_name);
+        setTitle(appName);
+        done.setVisibility(View.INVISIBLE);
+        cancel.setVisibility(View.INVISIBLE);
+        done.setEnabled(false);
+        cancel.setEnabled(false);
+        setup = false;
+    }
 
 	public void beaconSetup(final BeaconView beaconView) {
         LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -528,6 +543,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 	}
 
 	@Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+
+	@Override
 	public void onSensorChanged(SensorEvent event) {
         /*Deprecated:
 		float degree = Math.round(event.values[0]);*/
@@ -560,6 +578,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 		orientationDisplay.setText("Heading: " + Float.toString(orientationDegree) + "º" + " " + compassOrientation);
 	}
 
-	@Override
-	public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+    private ArrayList<BeaconView> getConfiguredBeacons() {
+        ArrayList<BeaconView> configuredBeacons = new ArrayList<>();
+        int count = mainContainer.getChildCount();
+        for (int i = 0; i < count; i++) {
+            View beaconView = mainContainer.getChildAt(i);
+            if (beaconView instanceof BeaconView) {
+                configuredBeacons.add(((BeaconView) beaconView));
+            }
+        }
+        return configuredBeacons;
+    }
 }
