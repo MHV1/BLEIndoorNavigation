@@ -53,6 +53,10 @@ import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
+    private static final String TAG = "BLE_IN";
+    private static final int REQUEST_ENABLE_BLUETOOTH = 1;
+    private static final Handler handler = new Handler(Looper.getMainLooper());
+
     private RelativeLayout mainContainer;
     private MapPointer mapPointer;
 
@@ -64,24 +68,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private String compassOrientation = "";
     private TextView orientationDisplay;
 
-    private static final int SCAN_INTERVAL = 1000;
-    private ArrayList<Integer> rssiScanResults = new ArrayList<>();
-    private ArrayList<Double> distances = new ArrayList<>();
-
-    private static final String TAG = "BLE_IN";
-    private static final int REQUEST_ENABLE_BLUETOOTH = 1;
+    //The Eddystone Service UUID, 0xFEAA.
+    private static final ParcelUuid EDDYSTONE_SERVICE_UUID =
+            ParcelUuid.fromString("0000FEAA-0000-1000-8000-00805F9B34FB");
 
     //An aggressive scan for nearby devices that reports immediately.
     private static final ScanSettings SCAN_SETTINGS =
             new ScanSettings.Builder().setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY).setReportDelay(0)
                     .build();
 
-    private static final Handler handler = new Handler(Looper.getMainLooper());
-
-    //The Eddystone Service UUID, 0xFEAA.
-    private static final ParcelUuid EDDYSTONE_SERVICE_UUID =
-            ParcelUuid.fromString("0000FEAA-0000-1000-8000-00805F9B34FB");
-
+    private static final int SCAN_INTERVAL = 1000;
     private BluetoothLeScanner scanner;
     private ScanCallback scanCallback;
     private BeaconArrayAdapter arrayAdapter;
@@ -89,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Map<String /* device address */, Beacon> deviceToBeaconMap = new HashMap<>();
     private Map<String, Beacon> validatedBeacons = new HashMap<>();
 
+    private ArrayList<Double> distances = new ArrayList<>();
     private double newestDistance = 0.0;
     private double recordedDistance = 0.0;
     private double distanceDifference = 0.0;
@@ -96,8 +93,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private boolean setup = false;
     private Button done;
-    private Button cancel;
-    private List<BeaconView> beaconsOnMap;
+    private List<BeaconView> configuredBeacons = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,19 +103,20 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         setSupportActionBar(toolbar);
         init();
 
-        //Set up the list used to displayed beacon scan results.
-        ArrayList<Beacon> arrayList = new ArrayList<>();
-        arrayAdapter = new BeaconArrayAdapter(this, R.layout.beacon_list_item, arrayList);
-        new ScanFilter.Builder().setServiceUuid(EDDYSTONE_SERVICE_UUID).build();
-
-        //Initialize sensors.
+        //Initialize sensors used for compass.
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         magnetometer = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         orientationDisplay = (TextView) findViewById(R.id.orientationDisplay);
 
+        //Set up the list used to displayed beacon scan results.
+        ArrayList<Beacon> arrayList = new ArrayList<>();
+        arrayAdapter = new BeaconArrayAdapter(this, R.layout.beacon_list_item, arrayList);
+        new ScanFilter.Builder().setServiceUuid(EDDYSTONE_SERVICE_UUID).build();
+
+        //Main relative layout containing all views.
         mainContainer = (RelativeLayout) findViewById(R.id.main_container);
-        //initMapPointer();
+        initMapPointer();
         mainContainer.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -136,10 +133,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             BeaconView beaconView = new BeaconView(getApplicationContext());
                             beaconView.setPosition(tap);
                             mainContainer.addView(beaconView);
-                            beaconsOnMap.add(beaconView);
                             beaconSetup(beaconView);
                         }
-
                         break;
 
                     case MotionEvent.ACTION_UP:
@@ -149,36 +144,31 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         });
 
+        //Checks if there are any already configured beacons.
+        //TODO: Planning to save beacon configuration for future uses.
+        if(configuredBeacons.isEmpty()) {
+            showSetupAlertDialog("No beacons found",
+                    "Beacons must be configured before proceeding.");
+        } else {
+            runScan();
+        }
+
         //Apply setup changes and exit.
         done = (Button) findViewById(R.id.button_done);
         done.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                List<BeaconView> configured = getConfiguredBeacons();
-                for (BeaconView bw : configured) {
-                    Beacon beacon = validatedBeacons.get(bw.getBeaconAddress());
-                    rssiScanResults.add(beacon.rssi);
+                if(configuredBeacons.isEmpty()) {
+                    showSetupAlertDialog("No beacons found",
+                            "Beacons must be configured before proceeding.");
+
+                } else {
+                    exitSetupMode();
                 }
-                exitSetupMode();
-                //runScan();
             }
         });
         done.setVisibility(View.INVISIBLE);
         done.setEnabled(false);
-
-        //Cancel setup changes and exit.
-        cancel = (Button) findViewById(R.id.button_cancel);
-        cancel.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                for (BeaconView bw : beaconsOnMap) {
-                    mainContainer.removeView(bw);
-                }
-                exitSetupMode();
-            }
-        });
-        cancel.setVisibility(View.INVISIBLE);
-        cancel.setEnabled(false);
 
         //BLE scanner Callback.
         scanCallback = new ScanCallback() {
@@ -244,6 +234,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
     }
 
+
     //Show map pointer on the screen (user position).
     private void initMapPointer() {
         mapPointer = new MapPointer(getApplicationContext());
@@ -281,6 +272,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+    // Used when no beacons have been configured
+    private void showSetupAlertDialog(String title, String message) {
+        new AlertDialog.Builder(this).setTitle(title).setMessage(message)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        initSetupMode();
+                    }
+                }).show();
+    }
+
+
     // Checks the frame type and hands off the service data to the validation module.
     private void validateServiceData(String deviceAddress, byte[] serviceData) {
         Beacon beacon = deviceToBeaconMap.get(deviceAddress);
@@ -311,9 +315,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
-    /*public void runScan() {
+    public void runScan() {
         if (scanner != null) {
-            rssiScanResults.clear();
             distances.clear();
             scanner.startScan(null, SCAN_SETTINGS, scanCallback);
 
@@ -322,30 +325,35 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     scanner.stopScan(scanCallback);
 
-                    if (rssiScanResults.size() > 0) {
-                        for (int i = 0; i < rssiScanResults.size(); i++) {
-                            distances.add(distanceCalculation(rssiScanResults.get(i)));
+                    if (!configuredBeacons.isEmpty()) {
+                        for (BeaconView bw : configuredBeacons) {
+                            Beacon beacon = validatedBeacons.get(bw.getBeaconAddress());
+
+                            Log.i(TAG, "TEST " + beacon.deviceAddress + beacon.rssi);
+                            distances.add(distanceCalculation(beacon.rssi));
+
+                            newestDistance = averageDistance();
+                            distanceDifference = newestDistance - recordedDistance;
+                            //Log.i(TAG, movement + " " + newestDistance + " " + recordedDistance);
+
+                            if (distanceDifference == 0) {
+                                movement = "Stay";
+                            } else if (distanceDifference >= 1) {
+                                movement = "Back";
+                            } else {
+                                movement = "Forth";
+                            }
+
+                            recordedDistance = averageDistance();
+                            bw.setDistanceToUser("" + recordedDistance + " m");
                         }
                     }
 
-                    newestDistance = averageDistance();
-                    distanceDifference = newestDistance - recordedDistance;
-                    //Log.i(TAG, movement + " " + newestDistance + " " + recordedDistance);
-
-                    if (distanceDifference == 0) {
-                        movement = "Stay";
-                    } else if (distanceDifference >= 1) {
-                        movement = "Back";
-                    } else {
-                        movement = "Forth";
-                    }
-
-                    recordedDistance = averageDistance();
                     runScan();
                 }
             }, SCAN_INTERVAL);
         }
-    }*/
+    }
 
 
     private double distanceCalculation(int rssi) {
@@ -353,6 +361,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+    //Used for testing calculation accuracy.
 	/*private int averageRSSI() {
         int averageRSSI = 0;
 		int sum = 0;
@@ -414,6 +423,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
         handler.removeCallbacksAndMessages(null);
         setOnLostRunnable();
+        runScan();
     }
 
 
@@ -449,15 +459,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     public void initSetupMode() {
-        beaconsOnMap = new ArrayList<>();
-        scanner.stopScan(scanCallback);
-
         final String appName = getApplicationContext().getString(R.string.app_name);
         setTitle(appName + " (Setup)");
         done.setVisibility(View.VISIBLE);
-        cancel.setVisibility(View.VISIBLE);
         done.setEnabled(true);
-        cancel.setEnabled(true);
         setup = true;
     }
 
@@ -466,9 +471,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         final String appName = getApplicationContext().getString(R.string.app_name);
         setTitle(appName);
         done.setVisibility(View.INVISIBLE);
-        cancel.setVisibility(View.INVISIBLE);
         done.setEnabled(false);
-        cancel.setEnabled(false);
         setup = false;
     }
 
@@ -509,9 +512,19 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 .setTitle("New Beacon Setup")
                 .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+
                         if (input.length() > 0) {
                             beaconView.setBeaconDescription("Description: " + input.getText().toString());
                         }
+
+                        if(beaconView.getBeaconAddress() != null) {
+                            configuredBeacons.add(beaconView);
+
+                        } else {
+                            Toast.makeText(MainActivity.this, "Please, select a beacon", Toast.LENGTH_SHORT).show();
+                            beaconSetup(beaconView);
+                        }
+
                     }
                 })
                 .setNegativeButton("Cancel",
@@ -608,17 +621,5 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             compassOrientation = "W";
         }
         orientationDisplay.setText("Heading: " + Float.toString(orientationDegree) + "º" + " " + compassOrientation);
-    }
-
-    private ArrayList<BeaconView> getConfiguredBeacons() {
-        ArrayList<BeaconView> configuredBeacons = new ArrayList<>();
-        int count = mainContainer.getChildCount();
-        for (int i = 0; i < count; i++) {
-            View beaconView = mainContainer.getChildAt(i);
-            if (beaconView instanceof BeaconView) {
-                configuredBeacons.add(((BeaconView) beaconView));
-            }
-        }
-        return configuredBeacons;
     }
 }

@@ -23,20 +23,13 @@
         android:text="Orientation:"/>
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="120dp"
+        android:layout_height="80dp"
         android:text="Done"
         android:id="@+id/button_done"
+        android:layout_marginBottom="44dp"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentStart="true" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Cancel"
-        android:id="@+id/button_cancel"
-        android:layout_alignBottom="@+id/button_done"
-        android:layout_alignParentEnd="true"/>
+        android:layout_centerHorizontal="true" />
 
     <!--<TextView
         android:layout_width="wrap_content"
