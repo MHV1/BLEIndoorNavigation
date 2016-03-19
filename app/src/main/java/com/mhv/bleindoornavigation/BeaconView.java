@@ -1,7 +1,7 @@
 package com.mhv.bleindoornavigation;
 
 import android.content.Context;
-import android.graphics.PointF;
+import android.view.MotionEvent;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -11,7 +11,9 @@ public class BeaconView extends LinearLayout {
     private RelativeLayout.LayoutParams layoutParams;
     private TextView distanceToUser;
     private TextView beaconDescription;
-    private String beaconAddress;
+    private String address;
+    private int positionX;
+    private int positionY;
 
     public BeaconView(Context context) {
         super(context);
@@ -22,11 +24,20 @@ public class BeaconView extends LinearLayout {
         setLayoutParams(layoutParams);
     }
 
-    public void setPosition(PointF position) {
-        int x = (int) position.x;
-        int y = (int) position.y;
-        layoutParams.setMargins(x - 250, y - 250, 0, 0);
+    public void setPosition(MotionEvent event) {
+        int offset = 250;
+        positionX = (int) event.getX();
+        positionY = (int) event.getY();
+        layoutParams.setMargins(positionX - offset, positionY - offset, 0, 0);
         setLayoutParams(layoutParams);
+    }
+
+    public int getPositionX() {
+        return positionX;
+    }
+
+    public int getPositionY() {
+        return positionY;
     }
 
     public void setBeaconDescription(String beaconDescription) {
@@ -37,11 +48,11 @@ public class BeaconView extends LinearLayout {
         this.distanceToUser.setText(distanceToUser);
     }
 
-    public void setBeaconAddress(String beaconAddress) {
-        this.beaconAddress = beaconAddress;
+    public void setAddress(String address) {
+        this.address = address;
     }
 
-    public String getBeaconAddress() {
-        return beaconAddress;
+    public String getAddress() {
+        return address;
     }
 }

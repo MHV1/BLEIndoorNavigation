@@ -1,32 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
     android:layout_width="wrap_content"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Distance: unknown"
         android:id="@+id/distanceToUser"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="5dp"
-        android:textSize="14sp"/>
-
-    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Description: none"
-        android:id="@+id/beaconDescription"
         android:layout_gravity="center_horizontal"
         android:layout_marginBottom="5dp"
-        android:textSize="14sp"/>
+        android:text="Distance: unknown"
+        android:textSize="14sp"
+        android:background="@android:color/white"/>
+
+    <TextView
+        android:id="@+id/beaconDescription"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginBottom="5dp"
+        android:text="Description: none"
+        android:textSize="14sp"
+        android:background="@android:color/white"/>
 
     <ImageView
+        android:id="@+id/beaconIcon"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:id="@+id/beaconIcon"
         android:layout_gravity="center_horizontal"
-        android:src="@drawable/triangle"
-        android:background="@android:color/darker_gray"/>
+        android:background="@android:color/darker_gray"
+        android:src="@drawable/triangle" />
 </LinearLayout>

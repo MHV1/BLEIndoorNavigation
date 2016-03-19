@@ -117,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //Main relative layout containing all views.
         mainContainer = (RelativeLayout) findViewById(R.id.main_container);
         initMapPointer();
+
         mainContainer.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
@@ -129,11 +130,37 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             mapPointer.postInvalidate();
 
                         } else {
-                            PointF tap = new PointF(event.getX(), event.getY());
-                            BeaconView beaconView = new BeaconView(getApplicationContext());
-                            beaconView.setPosition(tap);
-                            mainContainer.addView(beaconView);
-                            beaconSetup(beaconView);
+                            //TODO: Working on simplifying this logic.
+                            //If configured beacons exist, check their distances and whether they are tapped or not.
+                            if (!configuredBeacons.isEmpty()) {
+                                for (BeaconView bv : configuredBeacons) {
+                                    //If the existing beacon is tapped show its address.
+                                    if (event.getX() >= (bv.getPositionX() - bv.getMeasuredWidth() / 2)
+                                            && (event.getX() <= (bv.getPositionX() + bv.getMeasuredWidth() / 2))) {
+                                        if (event.getY() >= (bv.getPositionY() - bv.getMeasuredHeight() / 2) &&
+                                                (event.getY() <= (bv.getPositionY() + bv.getMeasuredHeight() / 2))) {
+                                            Toast.makeText(MainActivity.this, "" + bv.getAddress(), Toast.LENGTH_SHORT).show();
+                                            //If there is no beacon in the tapped area add a new one.
+                                        } else {
+                                            BeaconView beaconView = new BeaconView(getApplicationContext());
+                                            beaconView.setPosition(event);
+                                            mainContainer.addView(beaconView);
+                                            beaconSetup(beaconView);
+                                        }
+                                        //If there are no configured beacons add new ones.
+                                    } else {
+                                        BeaconView beaconView = new BeaconView(getApplicationContext());
+                                        beaconView.setPosition(event);
+                                        mainContainer.addView(beaconView);
+                                        beaconSetup(beaconView);
+                                    }
+                                }
+                            } else {
+                                BeaconView beaconView = new BeaconView(getApplicationContext());
+                                beaconView.setPosition(event);
+                                mainContainer.addView(beaconView);
+                                beaconSetup(beaconView);
+                            }
                         }
                         break;
 
@@ -146,7 +173,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         //Checks if there are any already configured beacons.
         //TODO: Planning to save beacon configuration for future uses.
-        if(configuredBeacons.isEmpty()) {
+        if (configuredBeacons.isEmpty()) {
             showSetupAlertDialog("No beacons found",
                     "Beacons must be configured before proceeding.");
         } else {
@@ -158,7 +185,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         done.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(configuredBeacons.isEmpty()) {
+                if (configuredBeacons.isEmpty()) {
                     showSetupAlertDialog("No beacons found",
                             "Beacons must be configured before proceeding.");
 
@@ -325,9 +352,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     scanner.stopScan(scanCallback);
 
-                    if (!configuredBeacons.isEmpty()) {
+                    if (!configuredBeacons.isEmpty() && !validatedBeacons.isEmpty()) {
                         for (BeaconView bw : configuredBeacons) {
-                            Beacon beacon = validatedBeacons.get(bw.getBeaconAddress());
+                            Beacon beacon = validatedBeacons.get(bw.getAddress());
 
                             Log.i(TAG, "TEST " + beacon.deviceAddress + beacon.rssi);
                             distances.add(distanceCalculation(beacon.rssi));
@@ -336,13 +363,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             distanceDifference = newestDistance - recordedDistance;
                             //Log.i(TAG, movement + " " + newestDistance + " " + recordedDistance);
 
-                            if (distanceDifference == 0) {
+                            //TODO: move pointer relative to calculated distances.
+                            /*if (distanceDifference == 0) {
                                 movement = "Stay";
                             } else if (distanceDifference >= 1) {
                                 movement = "Back";
                             } else {
                                 movement = "Forth";
-                            }
+                            }*/
 
                             recordedDistance = averageDistance();
                             bw.setDistanceToUser("" + recordedDistance + " m");
@@ -362,7 +390,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
 
     //Used for testing calculation accuracy.
-	/*private int averageRSSI() {
+    /*private int averageRSSI() {
         int averageRSSI = 0;
 		int sum = 0;
 
@@ -417,7 +445,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onResume() {
         super.onResume();
         /*Deprecated:
-		sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
+        sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),
 				SensorManager.SENSOR_DELAY_GAME);*/
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, magnetometer, SensorManager.SENSOR_DELAY_NORMAL);
@@ -498,7 +526,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                         String beaconAddress = arrayAdapter.getItem(position).deviceAddress;
                         beaconSelected.setText("Beacon: " + beaconAddress);
-                        beaconView.setBeaconAddress(beaconAddress);
+                        beaconView.setAddress(beaconAddress);
                         dialog.dismiss();
                     }
                 });
@@ -517,7 +545,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             beaconView.setBeaconDescription("Description: " + input.getText().toString());
                         }
 
-                        if(beaconView.getBeaconAddress() != null) {
+                        if (beaconView.getAddress() != null) {
                             configuredBeacons.add(beaconView);
 
                         } else {
@@ -562,13 +590,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             initSetupMode();
 
         } else if (id == R.id.attachment) {
-            Dialog dialog = new Dialog(this);
+            /*Dialog dialog = new Dialog(this);
             dialog.setTitle("Beacon Details");
             LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
             View v = inflater.inflate(R.layout.beacon_details, null, false);
             dialog.setContentView(v);
             dialog.setCancelable(true);
-            dialog.show();
+            dialog.show();*/
         }
         return true;
     }
@@ -593,7 +621,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         /*Deprecated:
-		float degree = Math.round(event.values[0]);*/
+        float degree = Math.round(event.values[0]);*/
         float rotation[] = new float[9];
         float orientation[] = new float[3];
         float orientationDegree = 0f;
