@@ -13,10 +13,4 @@
         android:orderInCategory="100"
         android:title="Beacon Setup"
         app:showAsAction="never"/>
-
-    <item
-        android:id="@+id/attachment"
-        android:orderInCategory="100"
-        android:title="Attachment"
-        app:showAsAction="never"/>
 </menu>

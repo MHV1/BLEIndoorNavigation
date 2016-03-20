@@ -124,14 +124,39 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 switch (event.getAction() & MotionEvent.ACTION_MASK) {
                     case MotionEvent.ACTION_DOWN:
                         if (!setup) {
-                            PointF tap = new PointF(event.getX(), event.getY());
-                            Coordinates position = new Coordinates(tap.x, tap.y);
-                            mapPointer.setPointerPosition(position);
-                            mapPointer.postInvalidate();
-
+                            //TODO: Working on simplifying this logic.
+                            if (!configuredBeacons.isEmpty()) {
+                                for (BeaconView bv : configuredBeacons) {
+                                    //If the existing beacon is tapped show its address.
+                                    if (event.getX() >= (bv.getPositionX() - bv.getMeasuredWidth() / 2)
+                                            && (event.getX() <= (bv.getPositionX() + bv.getMeasuredWidth() / 2))) {
+                                        if (event.getY() >= (bv.getPositionY() - bv.getMeasuredHeight() / 2) &&
+                                                (event.getY() <= (bv.getPositionY() + bv.getMeasuredHeight() / 2))) {
+                                            Toast.makeText(MainActivity.this, "" + bv.getAddress(), Toast.LENGTH_SHORT).show();
+                                            showAttachmentAlertDialog();
+                                            //If there is no beacon in the tapped area reposition the pointer.
+                                        } else {
+                                            PointF tap = new PointF(event.getX(), event.getY());
+                                            Coordinates position = new Coordinates(tap.x, tap.y);
+                                            mapPointer.setPointerPosition(position);
+                                            mapPointer.postInvalidate();
+                                        }
+                                    } else {
+                                        PointF tap = new PointF(event.getX(), event.getY());
+                                        Coordinates position = new Coordinates(tap.x, tap.y);
+                                        mapPointer.setPointerPosition(position);
+                                        mapPointer.postInvalidate();
+                                    }
+                                }
+                            } else {
+                                PointF tap = new PointF(event.getX(), event.getY());
+                                Coordinates position = new Coordinates(tap.x, tap.y);
+                                mapPointer.setPointerPosition(position);
+                                mapPointer.postInvalidate();
+                            }
                         } else {
                             //TODO: Working on simplifying this logic.
-                            //If configured beacons exist, check their distances and whether they are tapped or not.
+                            //If configured beacons exist, check their dimensions and whether they are tapped or not.
                             if (!configuredBeacons.isEmpty()) {
                                 for (BeaconView bv : configuredBeacons) {
                                     //If the existing beacon is tapped show its address.
@@ -312,6 +337,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
 
+    private void showAttachmentAlertDialog() {
+        Dialog dialog = new Dialog(MainActivity.this);
+        dialog.setTitle("Beacon Details");
+        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View view = inflater.inflate(R.layout.beacon_details, null, false);
+        dialog.setContentView(view);
+        dialog.setCancelable(true);
+        dialog.show();
+    }
+
+
     // Checks the frame type and hands off the service data to the validation module.
     private void validateServiceData(String deviceAddress, byte[] serviceData) {
         Beacon beacon = deviceToBeaconMap.get(deviceAddress);
@@ -387,21 +423,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private double distanceCalculation(int rssi) {
         return Math.pow(10, (-62 - rssi) / 20.00);
     }
-
-
-    //Used for testing calculation accuracy.
-    /*private int averageRSSI() {
-        int averageRSSI = 0;
-		int sum = 0;
-
-		if(rssiScanResults.size() > 0) {
-			for (int i = 0; i < rssiScanResults.size(); i++) {
-				sum += rssiScanResults.get(i);
-			}
-			averageRSSI = sum / rssiScanResults.size();
-		}
-		return averageRSSI;
-	}*/
 
 
     private double averageDistance() {
@@ -588,15 +609,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         } else if (id == R.id.action_beacon_setup) {
             initSetupMode();
-
-        } else if (id == R.id.attachment) {
-            /*Dialog dialog = new Dialog(this);
-            dialog.setTitle("Beacon Details");
-            LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            View v = inflater.inflate(R.layout.beacon_details, null, false);
-            dialog.setContentView(v);
-            dialog.setCancelable(true);
-            dialog.show();*/
         }
         return true;
     }
