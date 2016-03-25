@@ -132,7 +132,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                             && (event.getX() <= (bv.getPositionX() + bv.getMeasuredWidth() / 2))) {
                                         if (event.getY() >= (bv.getPositionY() - bv.getMeasuredHeight() / 2) &&
                                                 (event.getY() <= (bv.getPositionY() + bv.getMeasuredHeight() / 2))) {
-                                            Toast.makeText(MainActivity.this, "" + bv.getAddress(), Toast.LENGTH_SHORT).show();
                                             showAttachmentAlertDialog();
                                             //If there is no beacon in the tapped area reposition the pointer.
                                         } else {
@@ -342,9 +341,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         dialog.setTitle("Beacon Details");
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View view = inflater.inflate(R.layout.beacon_details, null, false);
-        dialog.setContentView(view);
-        dialog.setCancelable(true);
-        dialog.show();
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setView(view);
+
+        TextView beaconAddress = (TextView) view.findViewById(R.id.beaconAddress);
+        TextView instanceId = (TextView) view.findViewById(R.id.instanceId);
+        TextView namespaceId = (TextView) view.findViewById(R.id.namespaceId);
+        TextView attachmentData = (TextView) view.findViewById(R.id.attachment);
+
+        dialogBuilder
+                .setTitle("New Beacon Setup")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+
+                    }
+                });
+        dialogBuilder.create().show();
     }
 
 
