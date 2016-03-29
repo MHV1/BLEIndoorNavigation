@@ -132,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                                             && (event.getX() <= (bv.getPositionX() + bv.getMeasuredWidth() / 2))) {
                                         if (event.getY() >= (bv.getPositionY() - bv.getMeasuredHeight() / 2) &&
                                                 (event.getY() <= (bv.getPositionY() + bv.getMeasuredHeight() / 2))) {
-                                            showAttachmentAlertDialog();
+                                            showAttachmentAlertDialog(bv);
                                             //If there is no beacon in the tapped area reposition the pointer.
                                         } else {
                                             PointF tap = new PointF(event.getX(), event.getY());
@@ -335,8 +335,88 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 }).show();
     }
 
+    public void initSetupMode() {
+        final String appName = getApplicationContext().getString(R.string.app_name);
+        setTitle(appName + " (Setup)");
+        done.setVisibility(View.VISIBLE);
+        done.setEnabled(true);
+        setup = true;
+    }
 
-    private void showAttachmentAlertDialog() {
+
+    public void exitSetupMode() {
+        final String appName = getApplicationContext().getString(R.string.app_name);
+        setTitle(appName);
+        done.setVisibility(View.INVISIBLE);
+        done.setEnabled(false);
+        setup = false;
+    }
+
+
+    public void beaconSetup(final BeaconView beaconView) {
+        LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        View dialogView = layoutInflater.inflate(R.layout.beacon_setup_dialog, null);
+        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+        dialogBuilder.setView(dialogView);
+
+        final TextView beaconSelected = (TextView) dialogView.findViewById(R.id.beaconSelected);
+        final EditText input = (EditText) dialogView.findViewById(R.id.description_field);
+
+        Button selectBeacon = (Button) dialogView.findViewById(R.id.button_beacon_select);
+        selectBeacon.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                final Dialog dialog = new Dialog(MainActivity.this);
+                dialog.setTitle("Beacon Scanner");
+                ListView beaconList = new ListView(MainActivity.this);
+                beaconList.setAdapter(arrayAdapter);
+                beaconList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                        String beaconAddress = arrayAdapter.getItem(position).deviceAddress;
+                        beaconSelected.setText("Beacon: " + beaconAddress);
+                        beaconView.setAddress(beaconAddress);
+                        dialog.dismiss();
+                    }
+                });
+                dialog.setContentView(beaconList);
+                dialog.setCancelable(true);
+                dialog.show();
+            }
+        });
+
+        dialogBuilder
+                .setTitle("New Beacon Setup")
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+
+                        if (input.length() > 0) {
+                            beaconView.setBeaconDescription("Description: " + input.getText().toString());
+                        }
+
+                        if (beaconView.getAddress() != null) {
+                            configuredBeacons.add(beaconView);
+
+                        } else {
+                            Toast.makeText(MainActivity.this, "Please, select a beacon", Toast.LENGTH_SHORT).show();
+                            beaconSetup(beaconView);
+                        }
+
+                    }
+                })
+                .setNegativeButton("Cancel",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                mainContainer.removeView(beaconView);
+                                dialog.cancel();
+                            }
+                        });
+
+        dialogBuilder.create().show();
+    }
+
+
+    private void showAttachmentAlertDialog(final BeaconView beaconView) {
         Dialog dialog = new Dialog(MainActivity.this);
         dialog.setTitle("Beacon Details");
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -345,17 +425,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         dialogBuilder.setView(view);
 
         TextView beaconAddress = (TextView) view.findViewById(R.id.beaconAddress);
+        beaconAddress.append(" " + beaconView.getAddress());
         TextView instanceId = (TextView) view.findViewById(R.id.instanceId);
         TextView namespaceId = (TextView) view.findViewById(R.id.namespaceId);
         TextView attachmentData = (TextView) view.findViewById(R.id.attachment);
-
-        dialogBuilder
-                .setTitle("New Beacon Setup")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-
-                    }
-                });
         dialogBuilder.create().show();
     }
 
@@ -516,87 +589,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             }
         };
         handler.postDelayed(removeLostDevices, onLostTimeoutMillis);
-    }
-
-
-    public void initSetupMode() {
-        final String appName = getApplicationContext().getString(R.string.app_name);
-        setTitle(appName + " (Setup)");
-        done.setVisibility(View.VISIBLE);
-        done.setEnabled(true);
-        setup = true;
-    }
-
-
-    public void exitSetupMode() {
-        final String appName = getApplicationContext().getString(R.string.app_name);
-        setTitle(appName);
-        done.setVisibility(View.INVISIBLE);
-        done.setEnabled(false);
-        setup = false;
-    }
-
-
-    public void beaconSetup(final BeaconView beaconView) {
-        LayoutInflater layoutInflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View dialogView = layoutInflater.inflate(R.layout.beacon_setup_dialog, null);
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        dialogBuilder.setView(dialogView);
-
-        final TextView beaconSelected = (TextView) dialogView.findViewById(R.id.beaconSelected);
-        final EditText input = (EditText) dialogView.findViewById(R.id.description_field);
-
-        Button selectBeacon = (Button) dialogView.findViewById(R.id.button_beacon_select);
-        selectBeacon.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final Dialog dialog = new Dialog(MainActivity.this);
-                dialog.setTitle("Beacon Scanner");
-                ListView beaconList = new ListView(MainActivity.this);
-                beaconList.setAdapter(arrayAdapter);
-                beaconList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        String beaconAddress = arrayAdapter.getItem(position).deviceAddress;
-                        beaconSelected.setText("Beacon: " + beaconAddress);
-                        beaconView.setAddress(beaconAddress);
-                        dialog.dismiss();
-                    }
-                });
-                dialog.setContentView(beaconList);
-                dialog.setCancelable(true);
-                dialog.show();
-            }
-        });
-
-        dialogBuilder
-                .setTitle("New Beacon Setup")
-                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
-                    public void onClick(DialogInterface dialog, int id) {
-
-                        if (input.length() > 0) {
-                            beaconView.setBeaconDescription("Description: " + input.getText().toString());
-                        }
-
-                        if (beaconView.getAddress() != null) {
-                            configuredBeacons.add(beaconView);
-
-                        } else {
-                            Toast.makeText(MainActivity.this, "Please, select a beacon", Toast.LENGTH_SHORT).show();
-                            beaconSetup(beaconView);
-                        }
-
-                    }
-                })
-                .setNegativeButton("Cancel",
-                        new DialogInterface.OnClickListener() {
-                            public void onClick(DialogInterface dialog, int id) {
-                                mainContainer.removeView(beaconView);
-                                dialog.cancel();
-                            }
-                        });
-
-        dialogBuilder.create().show();
     }
 
 
